@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIGNAL — Live</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#161d3191;
+    --panel:#12161D;
+    --panel-2:#181D26;
+    --line:#232933;
+    --text:#F1F3F6;
+    --muted:#7C8697;
+    --signal:#5c55c0;
+    --signal-dim:#0A5C54;
+    --live:#FF4667;
+    --live-dim:#4a1622;
+    --meron:#FF4141;
+    --wala:#3B82F6;
+  }
+  html{
+    background: #2a3148 !important;
+  }
+  *{box-sizing:border-box;}
+  html,body{background:radial-gradient(120% 60% at 50% 0%, #323a54, var(--ink) 55%); color:var(--text); font-family:'Inter',sans-serif; min-height:100%;}
+  .font-display{font-family:'Rajdhani',sans-serif;}
+  .font-mono{font-family:'IBM Plex Mono',monospace;}
+
+  /* signature: broadcast pulse bars */
+  .pulse-bars{display:inline-flex; align-items:flex-end; gap:2px; height:10px;}
+  .pulse-bars span{width:2px; background:var(--live); display:inline-block; animation:pulse-bar 900ms ease-in-out infinite;}
+  .pulse-bars span:nth-child(1){height:40%; animation-delay:0ms;}
+  .pulse-bars span:nth-child(2){height:100%; animation-delay:120ms;}
+  .pulse-bars span:nth-child(3){height:65%; animation-delay:240ms;}
+  .pulse-bars span:nth-child(4){height:85%; animation-delay:360ms;}
+  @keyframes pulse-bar{
+    0%,100%{transform:scaleY(0.35); opacity:.7;}
+    50%{transform:scaleY(1); opacity:1;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .pulse-bars span{animation:none; transform:scaleY(0.8);}
+  }
+
+  .card{background:linear-gradient(180deg, var(--panel), var(--panel-2)); border:1px solid var(--line); box-shadow:0 6px 20px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04);}
+  .card:hover{border-color:#2E3644; box-shadow:0 10px 28px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.05); transform:translateY(-1px); transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;}
+  .chip{color:var(--muted); white-space:nowrap; background:linear-gradient(180deg, rgba(255,255,255,.02), transparent); box-shadow:0 2px 6px rgba(0,0,0,.25);}
+  .chip.active{background:linear-gradient(135deg, #6b62d6, var(--signal)); border-color:var(--signal); color:#FFFFFF; box-shadow: 0 0 10px 1px rgba(115, 103, 240, 0.7);}
+  .chip:hover:not(.active){border-color:#3A4352; color:var(--text);}
+
+  a:focus-visible, button:focus-visible{outline:2px solid var(--signal); outline-offset:2px;}
+
+  .noise-grad{background:radial-gradient(60% 80% at 20% 10%, rgba(0,217,192,0.10), transparent 60%), radial-gradient(50% 60% at 90% 0%, rgba(255,70,103,0.08), transparent 60%);}
+
+  .tick{font-variant-numeric: tabular-nums;}
+
+  /* ---- live player ---- */
+  #player-container{position:relative; width:100%; overflow:hidden; background:#000; box-shadow:0 12px 32px rgba(0,0,0,.5);}
+  #player-container .aspect-wrap{aspect-ratio:16/9; position:relative; width:100%;}
+  #thumbnail{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border:0; transition:opacity .4s ease; z-index:2;}
+  #liveIframe{position:absolute; inset:0; width:100%; height:100%; border:0; background:#000; display:block;}
+
+  .hlb-live-badge{position:absolute; top:10px; left:10px; z-index:3; display:flex; align-items:center; gap:6px; background:rgba(0,0,0,.65); padding:5px 10px; border-radius:20px;}
+  .hlb-live-badge .dot{width:8px; height:8px; background:var(--live); border-radius:50%; animation:blink 1.1s infinite;}
+  @keyframes blink{0%,50%,100%{opacity:1;} 25%,75%{opacity:.25;}}
+
+  .coming-soon{
+    position:absolute; z-index:4; left:50%; top:50%;
+    transform:translate(-50%,-50%);
+    font-family:'Rajdhani',sans-serif; font-weight:700; letter-spacing:.05em;
+    font-size:1.4rem; color:#fff; text-align:center; pointer-events:none;
+    padding:10px 18px; border-radius:8px;
+    background:linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.5));
+    text-shadow:0 4px 14px rgba(0,0,0,.6);
+    transition:opacity .3s ease;
+    animation:pulseText 1.8s ease-in-out infinite;
+  }
+  @keyframes pulseText{0%,100%{transform:translate(-50%,-50%) scale(1);} 50%{transform:translate(-50%,-50%) scale(1.03);}}
+
+  .channel-btn{cursor:pointer; display:inline-flex; align-items:center; gap:2px; padding:4px 14px 4px 4px !important}
+  .channel-btn .avatar{width:28px; height:28px; border-radius:50%; overflow:hidden; flex-shrink:0; position:relative; background:linear-gradient(135deg,#161b24,#0d1117); display:flex; align-items:center; justify-content:center; border:1px solid var(--line); box-shadow: 0 0 10px 1px rgba(115, 103, 240, 0.7); color:var(--muted);}
+  .channel-btn.active .avatar{color:#FFFFFF;}
+
+  /* ---- vote bar ---- */
+  .vote-container{display:flex; align-items:center; gap:14px; background:linear-gradient(180deg, var(--panel-2), #14181f); border:1px solid var(--line); border-top:none; padding:14px 16px; box-shadow:0 8px 20px rgba(0,0,0,.3);}
+  .side{display:flex; flex-direction:column; align-items:center; justify-content:center; width:56px; height:56px; border-radius:50%; font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:13px; cursor:pointer; flex-shrink:0; transition:transform .15s ease;}
+  .side:hover{transform:scale(1.05);}
+  .meron-side{background:linear-gradient(145deg,#ff5b5b,var(--meron)); border:2px solid #ff9090; box-shadow:0 4px 14px rgba(255,65,65,.35);}
+  .wala-side{background:linear-gradient(145deg,#3399ff,var(--wala)); border:2px solid #93c5fd; box-shadow:0 4px 14px rgba(59,130,246,.35);}
+  .side .heart{font-size:16px; line-height:1;}
+
+  .bar{flex:1; height:14px; border-radius:20px; background:#1a2029; position:relative; overflow:hidden; border:1px solid var(--line);}
+  .bar-meron{position:absolute; left:0; top:0; height:100%; width:50%; background:linear-gradient(90deg,var(--meron),#ff8080); transition:width .5s ease;}
+  .bar-wala{position:absolute; right:0; top:0; height:100%; width:50%; background:linear-gradient(90deg,#5b9bff,var(--wala)); transition:width .5s ease;}
+
+  .stats{display:flex; justify-content:space-between; width:100%; font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); padding:10px 16px; background:linear-gradient(180deg, var(--panel-2), #14181f); border:1px solid var(--line); border-top:none; border-radius:0 0 8px 8px; box-shadow:0 8px 20px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.02);}
+  .stats .meron-text{color:var(--meron);}
+  .stats .wala-text{color:var(--wala);}
+  .stats strong{color:var(--text);}
+
+  .heart-float{position:fixed; font-size:16px; color:var(--meron); pointer-events:none; z-index:9999; animation:floatUp 1s ease-out forwards;}
+  @keyframes floatUp{0%{opacity:1; transform:translateY(0) scale(1);} 50%{opacity:1; transform:translateY(-20px) scale(1.2);} 100%{opacity:0; transform:translateY(-50px) scale(1);}}
+
+  /* channel-card initials tile — used where we don't have a real thumbnail */
+  .chan-tile{aspect-ratio:16/9; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;
+    background:linear-gradient(135deg, #161b24, #0d1117);}
+  .chan-tile::before{content:""; position:absolute; inset:0; background:radial-gradient(60% 90% at 30% 0%, rgba(0,217,192,.14), transparent 60%);}
+  .chan-tile .initials{font-family:'Rajdhani',sans-serif; font-weight:700; font-size:1.8rem; letter-spacing:.04em; color:var(--text); position:relative; z-index:1;}
+</style>
+</head>
+<body class="min-h-screen">
+
+<header class="sticky top-0 z-40 backdrop-blur bg-[#161d3191] border-b" style="border-color:var(--line); box-shadow:0 4px 20px rgba(0,0,0,.25);">
+  <div class="max-w-7xl mx-auto px-5 md:px-8 h-16 flex items-center">
+    <div class="flex items-center gap-2 shrink-0">
+      <img src="https://cf88.me/icon/logo.jpg" alt="SIGNAL" class="h-8 w-auto rounded">
+    </div>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-5 md:px-8 pb-24 md:pb-0">
+
+  <!-- LIVE PLAYER -->
+  <section class="pt-4 md:pt-4">
+    <!-- channel switcher -->
+    <div id="channelList" class="channel-list flex items-center gap-2 overflow-x-auto px-3 py-2 mb-4">
+      <!-- populated by JS: chip per channel -->
+      <span class="font-mono text-xs" style="color:var(--muted)">Loading channels…</span>
+    </div>
+
+<div class="rounded-t-lg overflow-hidden card noise-grad">
+      <div id="player-container">
+        <div class="aspect-wrap">
+          <img id="thumbnail" src="" alt="Channel thumbnail">
+          <iframe id="liveIframe" width="100%" height="100%" frameborder="0" scrolling="no" allow="autoplay; fullscreen" allowfullscreen></iframe>
+          <div id="comingSoon" class="coming-soon" style="opacity:0;"></div>
+          <div class="hlb-live-badge">
+            <span class="dot" aria-hidden="true"></span>
+            <span class="font-display text-xs tracking-widest" style="font-weight:700;">LIVE</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- vote bar -->
+    <div class="vote-container">
+      <div class="side meron-side" id="voteRed" role="button" tabindex="0" aria-label="Vote MERON">
+        <div class="heart">♥</div>
+        <div class="score" id="redScore">0</div>
+      </div>
+
+      <div class="bar">
+        <div class="bar-meron" id="barMeron" style="width:50%;"></div>
+        <div class="bar-wala" id="barWala" style="width:50%;"></div>
+      </div>
+
+      <div class="side wala-side" id="voteBlue" role="button" tabindex="0" aria-label="Vote WALA">
+        <div class="heart">♥</div>
+        <div class="score" id="blueScore">0</div>
+      </div>
+    </div>
+    <div class="stats">
+      <span class="meron-text">MERON: <strong id="redPercent">50.0%</strong></span>
+      <span>TOTAL VOTES: <strong id="totalVotes">0</strong></span>
+      <span class="wala-text">WALA: <strong id="bluePercent">50.0%</strong></span>
+    </div>
+  </section>
+
+  <!-- POSTS / CLIPS -->
+  <section class="mt-5 pb-5">
+    <div class="flex items-end justify-between mb-4 flex-wrap gap-3">
+      <h2 class="font-display text-2xl" style="font-weight:700;">Channels</h2>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <a href="#" class="card rounded-lg overflow-hidden group">
+        <div class="aspect-video relative overflow-hidden">
+          <img src="https://store5.gofile.io/download/direct/e6acb1b7-a09e-402b-b7b8-4908d0b6b8b5/1.JPG" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt="">
+          <span class="absolute bottom-2 right-2 font-mono text-[10px] px-1.5 py-0.5 rounded bg-black/70">0:34</span>
+        </div>
+        <div class="p-3">
+          <p class="text-sm truncate" style="font-weight:500;">Match highlight — Round 14</p>
+          <p class="text-xs mt-1" style="color:var(--muted)">V168 · Round 12.4K views</p>
+        </div>
+      </a>
+      <a href="#" class="card rounded-lg overflow-hidden group">
+        <div class="aspect-video relative overflow-hidden">
+          <img src="https://store-na-phx-1.gofile.io/download/direct/ad88a413-8d25-4bdb-9336-4d05679ca076/Screenshot%202026-08-04%20085250.png" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt="">
+          <span class="absolute bottom-2 right-2 font-mono text-[10px] px-1.5 py-0.5 rounded bg-black/70">1:12</span>
+        </div>
+        <div class="p-3">
+          <p class="text-sm truncate" style="font-weight:500;">Match highlight — Round 8</p>
+          <p class="text-xs mt-1" style="color:var(--muted)">SC · Round 9.8K views</p>
+        </div>
+      </a>
+      <a href="#" class="card rounded-lg overflow-hidden group">
+        <div class="aspect-video relative overflow-hidden">
+          <img src="https://cold-eu-par-2.gofile.io/download/direct/2f0a9adf-8d48-4844-8d90-cc077b482920/1.jpg" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt="">
+          <span class="absolute bottom-2 right-2 font-mono text-[10px] px-1.5 py-0.5 rounded bg-black/70">0:48</span>
+        </div>
+        <div class="p-3">
+          <p class="text-sm truncate" style="font-weight:500;">Match highlight — Round 21</p>
+          <p class="text-xs mt-1" style="color:var(--muted)">SBB · Round 21.1K views</p>
+        </div>
+      </a>
+      <a href="#" class="card rounded-lg overflow-hidden group">
+        <div class="aspect-video relative overflow-hidden">
+          <img src="https://store-eu-par-8.gofile.io/download/direct/c98f0330-2f35-4b18-88b8-bb89e5e387fe/Screenshot%202026-08-13%20083550.png" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt="">
+          <span class="absolute bottom-2 right-2 font-mono text-[10px] px-1.5 py-0.5 rounded bg-black/70">2:03</span>
+        </div>
+        <div class="p-3">
+          <p class="text-sm truncate" style="font-weight:500;">Match highlight — Round 6</p>
+          <p class="text-xs mt-1" style="color:var(--muted)">GW · Round 6.3K views</p>
+        </div>
+      </a>
+    </div>
+  </section>
+
+</main>
+
+<script>
+(function(){
+  // ---- Config ----
+  // No backend: channels are embedded below (mirrors the static PHP array).
+  // This is the only external call left — the live-snip stream resolver —
+  // since that's a separate hosted service, not part of the Laravel app.
+  const CHANNEL_API_URL  = 'https://live-snip-production.up.railway.app/channel'; // POST -> { src } | { error }
+
+  // Static channel list — edit this array directly to add/remove channels.
+  let videos = [
+    { id: 1, title: 'V168', streamName: 'gv168',          channelName: 'V168', dataId: '47', thumb: 'images/channels/v168.jpg', message: '', votes_red: 0, votes_blue: 0, red_percent_vote: 50, blue_percent_vote: 50 },
+    { id: 2, title: 'SC',   streamName: 'fsc24cockfight', channelName: 'SC',   dataId: '43', thumb: 'images/channels/sc.jpg',   message: '', votes_red: 0, votes_blue: 0, red_percent_vote: 50, blue_percent_vote: 50 },
+    { id: 3, title: 'SBB',  streamName: 'frmsbvdolive',   channelName: 'SBB',  dataId: '8',  thumb: 'images/channels/sbb.jpg',  message: '', votes_red: 0, votes_blue: 0, red_percent_vote: 50, blue_percent_vote: 50 },
+    { id: 4, title: 'GW',   streamName: 'chgw24',         channelName: 'GW',   dataId: '21', thumb: 'images/channels/gw.jpg',   message: '', votes_red: 0, votes_blue: 0, red_percent_vote: 50, blue_percent_vote: 50 },
+    { id: 5, title: 'PH',   streamName: 'COCKFIGHPHH',    channelName: 'PH',   dataId: '1',  thumb: 'images/channels/ph.jpg',   message: '', votes_red: 0, votes_blue: 0, red_percent_vote: 50, blue_percent_vote: 50 },
+  ];
+
+  let currentChannelId = null;
+
+  const thumbnail   = document.getElementById('thumbnail');
+  const comingSoon  = document.getElementById('comingSoon');
+  const listEl      = document.getElementById('channelList');
+  const liveIframe  = document.getElementById('liveIframe');
+  const voteRed     = document.getElementById('voteRed');
+  const voteBlue    = document.getElementById('voteBlue');
+
+  function createHeart(el){
+    const rect = el.getBoundingClientRect();
+    const heart = document.createElement('span');
+    heart.className = 'heart-float';
+    heart.textContent = '♥';
+    heart.style.top = (rect.top - 10) + 'px';
+    heart.style.left = (rect.left + rect.width/2 - 8) + 'px';
+    document.body.appendChild(heart);
+    setTimeout(() => heart.remove(), 1000);
+  }
+
+  function updateStats(video){
+    const votesRed = video.votes_red ?? 0;
+    const votesBlue = video.votes_blue ?? 0;
+    const total = votesRed + votesBlue;
+    video.votes_total = total;
+
+    let redPercent = video.red_percent_vote ?? 50;
+    let bluePercent = video.blue_percent_vote ?? 50;
+    if (total > 0){
+      redPercent = ((votesRed/total)*100).toFixed(1);
+      bluePercent = ((votesBlue/total)*100).toFixed(1);
+    }
+
+    document.getElementById('redPercent').textContent = `${redPercent}%`;
+    document.getElementById('bluePercent').textContent = `${bluePercent}%`;
+    document.getElementById('totalVotes').textContent = total;
+    document.getElementById('barMeron').style.width = `${redPercent}%`;
+    document.getElementById('barWala').style.width = `${bluePercent}%`;
+    document.getElementById('redScore').textContent = votesRed;
+    document.getElementById('blueScore').textContent = votesBlue;
+  }
+
+  // Local-only voting — there's no backend to persist this to, so it just
+  // updates the in-memory array and UI. Swap this for a real POST to your
+  // API once you have a server again.
+  function sendVote(channelId, type, el){
+    if (!channelId) return;
+    const i = videos.findIndex(v => v.id === channelId);
+    if (i === -1) return;
+    if (type === 'red') videos[i].votes_red = (videos[i].votes_red || 0) + 1;
+    if (type === 'blue') videos[i].votes_blue = (videos[i].votes_blue || 0) + 1;
+    updateStats(videos[i]);
+    createHeart(el);
+  }
+
+  voteRed?.addEventListener('click', () => sendVote(currentChannelId, 'red', voteRed));
+  voteBlue?.addEventListener('click', () => sendVote(currentChannelId, 'blue', voteBlue));
+
+  function setActiveChannelButton(btn){
+    listEl.querySelectorAll('.channel-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+  }
+
+  function playStream(video, btn){
+    const { id, dataId, title, thumb, message } = video;
+    currentChannelId = id;
+
+    updateStats(video);
+    thumbnail.src = thumb || '';
+    thumbnail.style.opacity = '1';
+    comingSoon.style.opacity = '1';
+    comingSoon.textContent = message || 'Loading…';
+
+    fetch(CHANNEL_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({
+        streamName: video.streamName || title,
+        channelName: video.channelName || title,
+        dataId: String(dataId ?? id),
+      })
+    })
+    .then(res => res.json().then(data => ({ ok: res.ok, data })))
+    .then(({ ok, data }) => {
+      if (!ok || !data.src){
+        comingSoon.textContent = data.error || 'Stream unavailable.';
+        return;
+      }
+      liveIframe.src = data.src;
+      thumbnail.style.opacity = '0';
+      comingSoon.style.opacity = '0';
+    })
+    .catch(err => {
+      console.error('Channel API error:', err);
+      comingSoon.textContent = 'Stream unavailable.';
+    });
+
+    setActiveChannelButton(btn);
+  }
+
+  // Build the channel switcher from the static list above, then auto-play
+  // the first channel.
+  listEl.innerHTML = '';
+  videos.forEach(v => {
+    const btn = document.createElement('button');
+    btn.className = 'chip channel-btn font-display text-xs rounded-full tracking-wide shrink-0';
+    btn.dataset.id = v.id;
+    btn.innerHTML = `
+      <span class="avatar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="13" rx="2"></rect><path d="M8 3l4 3 4-3"></path></svg>
+      </span>
+      <span>${v.title}</span>`;
+    btn.onclick = () => playStream(v, btn);
+    listEl.appendChild(btn);
+  });
+  if (videos.length > 0) playStream(videos[0], listEl.firstChild);
+})();
+</script>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t backdrop-blur bg-[#161d3191]" style="border-color:var(--line); box-shadow:0 -4px 20px rgba(0,0,0,.35);">
+  <div class="flex items-stretch h-16">
+    <a href="#" class="flex-1 flex flex-col items-center justify-center gap-1" style="color:var(--muted);">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M8 3l4 3 4-3"/></svg>
+      <span class="font-display text-[11px] tracking-wide">LIVESTREAM</span>
+    </a>
+    <a href="#" class="flex-1 flex flex-col items-center justify-center gap-1" style="color:var(--signal);">
+      <span class="w-12 h-12 -mt-6 rounded-full flex items-center justify-center overflow-hidden" style="background:#5954b5; box-shadow: 0 0 10px 1px rgba(115, 103, 240, 0.7);">
+        <img src="https://cf88.me/icon/SB24-1.png" alt="" class="w-8 h-8 object-cover">
+      </span>
+      <span class="font-display text-[11px] tracking-wide">HOME</span>
+    </a>
+    <a href="#" class="flex-1 flex flex-col items-center justify-center gap-1" style="color:var(--muted);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+      <span class="font-display text-[11px] tracking-wide">Channels</span>
+    </a>
+  </div>
+</nav>
+
+</body>
+</html>
