@@ -237,6 +237,9 @@
           done = true;
           scrollStatusText.textContent = 'No more videos';
           observer.disconnect();
+          window.removeEventListener('scroll', nearSentinel);
+          window.removeEventListener('touchmove', nearSentinel);
+          window.removeEventListener('resize', nearSentinel);
         } else {
           scrollStatus.style.display = 'none';
         }
@@ -257,7 +260,26 @@
 
   observer.observe(scrollSentinel);
 
+  // Fallback for environments where IntersectionObserver doesn't fire
+  // reliably (some mobile in-app WebViews — Telegram/Facebook/TikTok's
+  // in-app browser — and iOS Safari during fast momentum scrolling can
+  // miss it). Checks the sentinel's position directly on scroll/resize/
+  // touch as a backup trigger; harmless no-op once the real observer is
+  // working, since fetchVideos() already guards against duplicate calls.
+  function nearSentinel(){
+    if (done || loading) return;
+    const rect = scrollSentinel.getBoundingClientRect();
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+    if (rect.top <= viewportHeight + 600) fetchVideos(page + 1);
+  }
+  window.addEventListener('scroll', nearSentinel, { passive: true });
+  window.addEventListener('touchmove', nearSentinel, { passive: true });
+  window.addEventListener('resize', nearSentinel);
+
   fetchVideos(1);
+  // Covers the case where page 1's items don't fill the screen, so the
+  // sentinel is already in view before any scroll happens.
+  setTimeout(nearSentinel, 300);
 })();
 </script>
 
