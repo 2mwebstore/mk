@@ -198,11 +198,17 @@
       position: sticky;
       top: 4rem;
       z-index: 40;
+      display: none;
   }
   
   .aspect-wrap:hover .hlb-live-badge{
     display: none;
   }
+
+  /* ---- top navigation ---- */
+  .top-nav{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;letter-spacing:.12em;padding:8px 12px;border-radius:999px;color:var(--muted);border:1px solid transparent;transition:.25s ease;}
+  .top-nav:hover,.top-nav.active{color:#fff;background:rgba(113,104,223,.18);border-color:rgba(129,120,239,.35);box-shadow:0 0 18px rgba(92,85,192,.18);}
+
 </style>
 </head>
 <body class="min-h-screen">
@@ -210,17 +216,40 @@
 <header class="sticky top-0 z-40 backdrop-blur bg-[#161d3191] border-b" style="border-color:var(--line); box-shadow:0 4px 20px rgba(0,0,0,.25);">
   <div class="max-w-7xl mx-auto px-5 md:px-8 h-16 flex items-center">
     <div class="flex items-center gap-2 shrink-0">
-      <img src="/v168.png" alt="V168" class="h-8 w-auto rounded">
+      <img src="/v168.png" alt="V168" class="h-7 sm:h-8 md:h-10 w-auto rounded">
     </div>
+    <nav class="ml-auto flex items-center gap-2">
+      <a href="/" class="chip top-nav active inline-flex items-center gap-2 shrink-0 backdrop-blur bg-[#161d3191]">
+        <span class="pulse-bars" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+        <span>LIVE</span>
+      </a>
+      <a href="/videos/" class="chip top-nav inline-flex items-center gap-2 shrink-0 backdrop-blur bg-[#161d3191]" aria-label="Videos">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polygon points="23 7 16 12 23 17 23 7"></polygon>
+          <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+        </svg>
+        <span>VIDEOS</span>
+      </a>
+      <a href="/fights/" class="chip top-nav inline-flex items-center gap-2 shrink-0 backdrop-blur bg-[#161d3191]" aria-label="List Fight">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14.5 17.5L3 6V3h3l11.5 11.5"></path>
+          <path d="M13 19l6-6"></path>
+          <path d="M16 16l4 4"></path>
+          <path d="M19 21l2-2"></path>
+          <path d="M9.5 6.5L21 18v3h-3L6.5 9.5"></path>
+        </svg>
+        <span>LIST FIGHT</span>
+      </a>
+    </nav>
   </div>
 </header>
 
 <main class="max-w-7xl mx-auto px-5 md:px-8 pb-24 md:pb-0">
 
   <!-- LIVE PLAYER -->
-  <section class="pt-4 md:pt-4">
+  <section id="live" class="pt-4 md:pt-4">
     <!-- channel switcher -->
-    <div id="channelList" class="channel-list flex items-center gap-1 overflow-x-auto px-3 py-2 mb-4">
+    <div id="channelList" class="channel-list flex items-center gap-1 overflow-x-auto px-3 py-2 mb-4 ">
       <!-- populated by JS: chip per channel -->
       <span class="font-mono text-xs" style="color:var(--muted)">Loading channels…</span>
     </div>
@@ -257,9 +286,9 @@
       </div>
     </div>
     <div class="stats">
-      <span class="meron-text">MERON: <strong id="redPercent">50.0%</strong></span>
-      <span>TOTAL VOTES: <strong id="totalVotes">0</strong></span>
-      <span class="wala-text">WALA: <strong id="bluePercent">50.0%</strong></span>
+      <span class="meron-text text-xs sm:text-sm md:text-xl">MERON: <strong id="redPercent">50.0%</strong></span>
+      <span class="text-xs sm:text-sm md:text-xl">TOTAL VOTES: <strong id="totalVotes">0</strong></span>
+      <span class="wala-text text-xs sm:text-sm md:text-xl">WALA: <strong id="bluePercent">50.0%</strong></span>
     </div>
   </section>
 
@@ -412,6 +441,7 @@
     listEl.appendChild(btn);
   });
   if (videos.length > 0) playStream(videos[0], listEl.firstChild);
+
 })();
 </script>
 
